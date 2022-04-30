@@ -29,7 +29,7 @@ def Counter(path,BodyPart):
     
     '''
     
-    folder=Path(path)
+    folder = Path(path)
     count=0
     if BodyPart=='knee':
         for file in folder.glob('*/*/*/'):
@@ -48,16 +48,16 @@ def FirstPreprocessing(file):
     - file (string): the original DICOM folder of the file.
     
     '''
-    file2=pydicom.read_file(file) #the file is read
-    a=file2.pixel_array.shape #needed to create the tensor
-    tensor2 = torch.ones(1,1,a[0],a[1]) #a tensor is created
-    x = np.array(file2.pixel_array)#the data of the file is transformed into an array
-    scaled_image = (np.maximum(x, 0) / x.max()) * 255.0  #the values are rescaled (now they go from 0 to 255)
+    data_read=pydicom.read_file(file) #the file is read
+    shapeImage=data_read.pixel_array.shape #needed to create the tensor
+    data_tensor = torch.ones(1,1,shapeImage[0],shapeImage[1]) #a tensor is created
+    data_array = np.array(data_read.pixel_array)#the data of the file is transformed into an array
+    scaled_image = (np.maximum(data_array, 0) / data_array.max()) * 255.0  #the values are rescaled (now they go from 0 to 255)
     scaled_image = np.uint8(np.round(scaled_image)) #they are transformed to integers
-    y = scaled_image.astype(np. float) #data is transformed into float in order to transform it into a tensor
-    slice = torch.tensor(y) #data is now in a 2D tensor
-    tensor2[0,0,:,:]=slice[:,:] #data is in a 4D tensor
-    return tensor2,scaled_image
+    scaled_float_image = scaled_image.astype(np. float) #data is transformed into float in order to transform it into a tensor
+    slice = torch.tensor(scaled_float_image) #data is now in a 2D tensor
+    data_tensor[0,0,:,:]=slice[:,:] #data is in a 4D tensor
+    return data_tensor,scaled_image
 
 def ShowImages(ScaledImage,transScalImage):
     '''
@@ -65,41 +65,52 @@ def ShowImages(ScaledImage,transScalImage):
 
     - ScaledImage (tensor): 2D tensor that includes the information of the original image.
 
-    - transScalImage (tensor): 2D tensor that includes the information of the transformed image.
+    - transScalImage (list of tensors): list of 2D tensors that includes the information of all the transformed images.
     
     '''
-    fig = plt.figure(figsize=(10,10))
-    plt.subplot(1, 2, 1)
-    plt.imshow(ScaledImage, cmap='gray')
-    plt.subplot(1, 2, 2)
-    plt.imshow(transScalImage, cmap='gray')
+    fig = plt.figure(figsize=(15,15))
+    length=len(transScalImage)
+    plt.subplot(1, length+1, 1)
+    plt.imshow(ScaledImage, cmap='gray')    
+    for i in range(length):
+        plt.subplot(1, length+1, i+2)
+        plt.imshow(transScalImage[i], cmap='gray')
 
-def SaveImages(file,ScaledImage,transScalImage,TypeArtifact):      
+def SaveSharpImages(file,ScaledImage):      
     '''
     Args:
 
     - file (string): the original DICOM folder of the file.
 
     - ScaledImage (tensor): 2D tensor that includes the information of the original image.
+    
+    '''
+    scaledImage = Image.fromarray(ScaledImage) #the initial image is created
+    new_file_name =(f"{file.stem}.jpg")
+    scaledImage.save(str(file.parent)+'/'+str(new_file_name)) #the initial image is saved
+    
+def SaveArtifImages(file,transScalImage,TypeArtifact):       
+    '''
+    Args:
+
+    - file (string): the original DICOM folder of the file.
 
     - transScalImage (tensor): 2D tensor that includes the information of the transformed image.
 
     - TypeArtifact (string): it can be 'Motion', 'Ghosting', 'BiasField' and 'Spike'.
     
     '''
-    image1 = Image.fromarray(ScaledImage) #the initial image is created
+    transScaledImage = Image.fromarray(transScalImage) #the transformed image is created
     new_file_name =(f"{file.stem}.jpg")
-    image1.save(str(file.parent)+'/'+str(new_file_name)) #the initial image is saved
-    image2 = Image.fromarray(transScalImage) #the transformed image is created
     #we will create a folder if it doesnt exist to save the new transformed images with the same structure as the original ones
     if os.path.isdir(TypeArtifact+'/'+str(file.parent)): 
-        image2.save(TypeArtifact+'/'+str(file.parent)+'/'+str(new_file_name))
+        transScaledImage.save(TypeArtifact+'/'+str(file.parent)+'/'+str(new_file_name))
     else:
         os.makedirs(TypeArtifact+'/'+str(file.parent))
-        image2.save(TypeArtifact+'/'+str(file.parent)+'/'+str(new_file_name))
+        transScaledImage.save(TypeArtifact+'/'+str(file.parent)+'/'+str(new_file_name))
      
     
-def MultiProc(file,BodyPart,TypeArtifact,showImage,saveImage):
+def MultiProc(file,BodyPart,TypeArtifactArray,showImage,saveImage):
     '''
     Args:
 
@@ -107,7 +118,7 @@ def MultiProc(file,BodyPart,TypeArtifact,showImage,saveImage):
 
     - BodyPart (string): it can be either 'brain' or 'knee'.
     
-    - TypeArtifact (string): it can be 'Motion', 'Ghosting', 'BiasField' and 'Spike'.
+    - TypeArtifactArray (list of strings): the elements can be 'Motion', 'Ghosting', 'BiasField', 'Blur', 'Noise' and 'Spike'.
 
     - showImage (boolean): True if you want images to be shown, False if not.
 
@@ -115,14 +126,18 @@ def MultiProc(file,BodyPart,TypeArtifact,showImage,saveImage):
     
     '''
     TensorImage,ScaledImage=FirstPreprocessing(file)
-    transScalImage=artifacts.addArtifact(TypeArtifact,TensorImage)
+    artifScalImage=[]
+    for i in range(len(TypeArtifactArray)):
+        artifScalImage.append(artifacts.addArtifact(TypeArtifactArray[i],TensorImage))
     if showImage:
-        ShowImages(ScaledImage,transScalImage)
+        ShowImages(ScaledImage,artifScalImage)
     if saveImage:
-        SaveImages(file,ScaledImage,transScalImage,TypeArtifact)
+        SaveSharpImages(file,ScaledImage)
+        for i in range(len(TypeArtifactArray)):
+            SaveArtifImages(file,artifScalImage[i],TypeArtifactArray[i])
     
     
-def Preprocessing(path,BodyPart,TypeArtifact,showImage,saveImage,multiprocess=False,num_process=multiprocessing.cpu_count()):
+def Preprocessing(path,BodyPart,TypeArtifactArray,showImage,saveImage,multiprocess=False,num_process=multiprocessing.cpu_count()):
     '''
     Args:
 
@@ -130,7 +145,7 @@ def Preprocessing(path,BodyPart,TypeArtifact,showImage,saveImage,multiprocess=Fa
 
     - BodyPart (string): it can be either 'brain' or 'knee'.
 
-    - TypeArtifact (string): it can be 'Motion', 'Ghosting', 'BiasField' and 'Spike'.
+    - TypeArtifactArray (list of strings): the elements can be 'Motion', 'Ghosting', 'BiasField', 'Blur', 'Noise' and 'Spike'.
 
     - showImage (boolean): True if you want images to be shown, False if not.
 
@@ -148,16 +163,20 @@ def Preprocessing(path,BodyPart,TypeArtifact,showImage,saveImage,multiprocess=Fa
         glob=folder.glob('*/*/*/*.dcm')
     if multiprocess: #we will do it with more than one processors
         pool=multiprocessing.Pool(num_process)
-        Multi=partial(MultiProc,BodyPart=BodyPart,TypeArtifact=TypeArtifact,showImage=showImage,saveImage=saveImage)
+        Multi=partial(MultiProc,BodyPart=BodyPart,TypeArtifactArray=TypeArtifactArray,showImage=showImage,saveImage=saveImage)
         pool.map(Multi,tqdm_notebook(glob,total=Counter(path,BodyPart),desc='Process bar'))
     else: #the process will be done with just one processor
         for file in tqdm_notebook(glob,total=Counter(path,BodyPart),desc='Process bar'):
             TensorImage,ScaledImage=FirstPreprocessing(file)
-            transScalImage=artifacts.addArtifact(TypeArtifact,TensorImage)
+            artifScalImage=[]
+            for i in range(len(TypeArtifactArray)):
+                artifScalImage.append(artifacts.addArtifact(TypeArtifactArray[i],TensorImage))
             if showImage:
-                ShowImages(ScaledImage,transScalImage)
+                ShowImages(ScaledImage,artifScalImage)
             if saveImage:
-                SaveImages(file,ScaledImage,transScalImage,TypeArtifact)
+                SaveSharpImages(file,ScaledImage)
+                for i in range(len(TypeArtifactArray)):
+                    SaveArtifImages(file,artifScalImage[i],TypeArtifactArray[i])
 
 
 
