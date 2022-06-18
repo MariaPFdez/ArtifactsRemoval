@@ -9,3 +9,5 @@ Moreover, we make use of super-resolution convolutional neural networks describe
 
   - C. Dong, C.C. Loy, K. He, and X. Tang. Image Super-Resolution Using Deep Convolutional Networks. IEEE Transactions on Pattern Analysis and Machine Intelligence 
     (2014). doi: 10.48550/arXiv.1501.00092
+    
+The original data is available on https://fastmri.med.nyu.edu/
