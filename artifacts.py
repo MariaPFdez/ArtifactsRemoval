@@ -26,6 +26,10 @@ def addArtifact(TypeArtifact,FileAsTensor):
 
     - TypeArtifact (string): it can be 'Motion', 'Ghosting', 'BiasField', 'Noise', 'Blur' and 'Spike'.
     
+    Return:
+    
+    - transScalImage(tensor): 4D tensor that includes the information of the image with artifact.
+    
     '''
         
     if TypeArtifact=='Motion':

@@ -1,3 +1,7 @@
+'''
+@author: MARÍA PEÑA FERNÁNDEZ
+'''
+
 import shutil
 from sklearn.model_selection import train_test_split
 import os
@@ -8,6 +12,10 @@ def filesPath(path):
     Args:
 
     - path (string): the original DICOM folder.
+    
+    Return:
+    
+    - data_paths (list of strings): it includes the identity number of the studies of MRI
     
     '''
     directory = os.listdir(path)
@@ -23,6 +31,14 @@ def splitFiles(data_paths):
     Args:
 
     - data_paths (list of strings): it includes the identity number of the studies of MRI
+    
+    Return:
+    
+    - train (list of strings): it includes the identity number of the studies that will be used to train
+    
+    - val (list of strings): it includes the identity number of the studies that will be used to validate
+    
+    - test (list of strings): it includes the identity number of the studies that will be used to test    
     
     '''
     (train_total, test) = train_test_split(data_paths, test_size=0.2)
@@ -43,6 +59,14 @@ def completePaths(path,type_artifact_array,train,val,test):
     - val (list of strings): it includes the identity number of the studies that will be used to validate
     
     - test (list of strings): it includes the identity number of the studies that will be used to test
+    
+    Return:
+    
+    - train_all (list of strings): it contains the name of each training file, including the identity number of the study
+    
+    - val_all (list of strings): it contains the name of each validation file, including the identity number of the study
+    
+    - test_all (list of strings): it contains the name of each test file, including the identity number of the study    
     
     '''
     train_all = []
@@ -89,6 +113,8 @@ def createFiles(path,type_artifact_array,train,val,test):
     
     - test (list of strings): it includes the identity number of the studies that will be used to test
     
+    Return: none
+    
     '''
     os.makedirs(f'{path}/Training', exist_ok=True)
     os.makedirs(f'{path}/Test', exist_ok=True)
@@ -129,6 +155,8 @@ def divideData(path,type_artifact_array,train_all,val_all,test_all):
     
     - test_all (list of strings): it contains the name of each test file, including the identity number of the study
     
+    Return: none
+    
     '''
     for i,data in enumerate(train_all):
         source = f'{path}/{data}'
@@ -167,6 +195,8 @@ def eraseEmptyFolders(path,type_artifact_array):
 
     - type_artifact_array (list of strings): the elements can be 'Motion', 'Ghosting', 'BiasField', 'Blur', 'Noise' and 'Spike'.
     
+    Return: none
+    
     '''
     for i,artifact in enumerate(type_artifact_array):
         shutil.rmtree(f'{artifact}/{path}',ignore_errors=True)            
@@ -179,6 +209,8 @@ def splitTrainValTest(path,type_artifact_array):
     - path (string): the original DICOM folder.
 
     - type_artifact_array (list of strings): the elements can be 'Motion', 'Ghosting', 'BiasField', 'Blur', 'Noise' and 'Spike'.
+    
+    Return: none
     
     '''
     data_paths = filesPath(path)

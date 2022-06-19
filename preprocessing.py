@@ -27,6 +27,10 @@ def Counter(path,BodyPart):
 
     - BodyPart (string): it can be either 'brain' or 'knee'.
     
+    Return:
+    
+    - count (integer): number of files that the knee or brain dataset has
+    
     '''
     
     folder = Path(path)
@@ -46,6 +50,12 @@ def FirstPreprocessing(file):
     Args:
 
     - file (string): the original DICOM folder of the file.
+    
+    Return:
+    
+    - data_tensor (tensor): 4D tensor that includes the information of the original image.
+    
+    - scaled_image (tensor): 2D tensor that includes the information of the original image.
     
     '''
     data_read=pydicom.read_file(file) #the file is read
@@ -67,6 +77,8 @@ def ShowImages(ScaledImage,transScalImage):
 
     - transScalImage (list of tensors): list of 2D tensors that includes the information of all the transformed images.
     
+    Return: none
+    
     '''
     fig = plt.figure(figsize=(15,15))
     length=len(transScalImage)
@@ -84,6 +96,8 @@ def SaveSharpImages(file,ScaledImage):
 
     - ScaledImage (tensor): 2D tensor that includes the information of the original image.
     
+    Return: none
+    
     '''
     scaledImage = Image.fromarray(ScaledImage) #the initial image is created
     new_file_name =(f"{file.stem}.jpg")
@@ -98,6 +112,8 @@ def SaveArtifImages(file,transScalImage,TypeArtifact):
     - transScalImage (tensor): 2D tensor that includes the information of the transformed image.
 
     - TypeArtifact (string): it can be 'Motion', 'Ghosting', 'BiasField' and 'Spike'.
+    
+    Return: none
     
     '''
     transScaledImage = Image.fromarray(transScalImage) #the transformed image is created
@@ -123,6 +139,8 @@ def MultiProc(file,BodyPart,TypeArtifactArray,showImage,saveImage):
     - showImage (boolean): True if you want images to be shown, False if not.
 
     - saveImage (boolean): True if you want images to be saved, False if not.
+    
+    Return: none
     
     '''
     TensorImage,ScaledImage=FirstPreprocessing(file)
@@ -154,6 +172,8 @@ def Preprocessing(path,BodyPart,TypeArtifactArray,showImage,saveImage,multiproce
     - multiprocess (boolean): True if you want to use multiprocessing, False if not. Default value: False.
 
     - num_process (int): number of processors you want to use. Default value: multiprocessing.cpu_count()
+    
+    Return: none
     
     '''
     folder=Path(path)#the structure of folders for knee and brain is different
